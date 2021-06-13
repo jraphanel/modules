@@ -428,19 +428,40 @@ proc initStateTermColumns {} {
 
 # Get all groups of user running modulecmd.tcl process
 proc __initStateUsergroups {} {
-   # ensure groups including space in their name (found on Cygwin/MSYS
-   # platforms) are correctly set as list element
-   if {[catch {
-      return [split [string range [runCommand id -G -n -z] 0 end-1] \0]
-   } errMsg]} {
-      # fallback if '-z' option is not supported
-      return [runCommand id -G -n]
+   if {[getState is_win]} {
+      set groups_list [list]
+      catch {
+         # 'net user' : get list of associated groups (with or without domain)
+         if { [info exists ::env(USERDNSDOMAIN)] } {
+            set cmdOut [exec net user $::env(USERNAME) {/DOMAIN}]
+         } else {
+            set cmdOut [exec net user $::env(USERNAME)]
+         }
+         foreach {res grp} [regexp -all -inline {(?:\*)([^\s]+)} $cmdOut] {
+            lappend groups_list $grp
+         }
+      } errMsg
+      return $groups_list
+   } else {
+      # ensure groups including space in their name (found on Cygwin/MSYS
+      # platforms) are correctly set as list element
+      if {[catch {
+         return [split [string range [runCommand id -G -n -z] 0 end-1] \0]
+      } errMsg]} {
+         # fallback if '-z' option is not supported
+         return [runCommand id -G -n]
+      }
    }
 }
 
 # Get name of user running modulecmd.tcl process
 proc __initStateUsername {} {
-   return [runCommand id -u -n]
+   if {[getState is_win]} {
+      # User name is directly available through USERNAME environment variable
+      return $::env(USERNAME)
+   } else {
+      return [runCommand id -u -n]
+   }
 }
 
 # Get Epoch time (number of seconds elapsed since Unix epoch)
@@ -2849,11 +2870,7 @@ proc parseApplicationCriteriaArgs {aftbef nearsec args} {
                }
             }
             --not-group - --not-user {
-               if {[getState is_win]} {
-                  knerror "Option '$arg' not supported on Windows platform"
-               } else {
-                  set nextargisval not[string range $arg 6 end]list
-               }
+               set nextargisval not[string range $arg 6 end]list
             }
             default {
                lappend otherargs $arg
