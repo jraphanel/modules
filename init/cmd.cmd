@@ -11,5 +11,8 @@ for %%i in (module.cmd) do (
    )
 )
 
+:: define module command and surrounding initial environment (default value
+:: for MODULESHOME, MODULEPATH, LOADEDMODULES and parse of init config files)
+call module autoinit
 :: enable a default modulepath directory
 call module use "%MODULESHOME%\modulefiles"
