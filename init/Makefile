@@ -17,15 +17,18 @@ ifneq ($(wildcard ../Makefile.inc),../Makefile.inc)
 endif
 include ../Makefile.inc
 
-# source version definitions shared across the Makefiles of this project
-include ../version.inc
-
 # generate 'module use' commands to put in modulerc from modulepath
 modulerc := $(addprefix \\\nmodule use --append {,$(subst :,} ,$(modulepath)}))
 # generate 'module load' commands to put in modulerc from loadedmodules
 ifneq ($(loadedmodules),)
   modulerc := $(modulerc)$(addprefix \\\nmodule load ,\
     $(subst :, ,$(loadedmodules)))
+endif
+
+# setup summary echo rules unless silent mode set
+ECHO_DIR_PREFIX = init/
+ifneq ($(findstring s,$(MAKEFLAGS)),s)
+ECHO_GEN = @echo ' ' GEN $(ECHO_DIR_PREFIX)$@;
 endif
 
 ifeq ($(compatversion),y)
@@ -44,6 +47,14 @@ ifeq ($(setdotmodulespath),y)
   # scripts will use .modulespath prior to modulerc. If .modulespath sets a
   # module path then modulerc will be ignored
 all: .modulespath
+endif
+
+../version.inc:
+	$(MAKE) --no-print-directory -C .. version.inc
+
+# source version definitions shared across the Makefiles of this project
+ifeq ($(findstring clean,$(MAKECMDGOALS)),)
+-include ../version.inc
 endif
 
 # define init configs location
@@ -133,7 +144,24 @@ quarvarsre += $(foreach vv,$(quarantinevars),$(call runenvvarre,$(firstword\
 quarvarsre += s/@.*RUNENV_VAR.*@//;'
 endif
 
+# define variables for shell completion
+comp_cmds := add apropos aliases avail append-path clear config del display help initadd initclear initlist initprepend initrm is-loaded is-saved is-used is-avail info-loaded keyword list load path paths purge prepend-path refresh reload restore rm remove remove-path save savelist saveshow saverm search show sh-to-mod source swap switch test unload unuse use whatis
+comp_opts := -D -h -s -T -v -V -w --debug --help --silent --trace --verbose --version --paginate --no-pager --color --color= --width --width=
+comp_load_opts := --auto --no-auto --force -f --icase -i
+comp_list_opts := -a -j -l -o -t --all --json --long --output --output= --terse
+comp_clear_opts := --force -f
+comp_avail_opts := -a -C -d -i -j -L -l -o -S -t --all --contains --default --icase --json --latest --long --output --output= --starts-with --terse --indepth --no-indepth
+comp_mfile_opts := -i --icase
+comp_whatis_opts := -a -i -j --all --icase --json
+comp_search_opts := -a -j --all --json
+comp_aliases_opts := -a --all
+comp_isavail_opts := -a -i --all --icase
+comp_path_opts := -d --delim --duplicates
+comp_rm_path_opts := -d --delim --index
+comp_config_opts := --dump-state --reset advanced_version_spec auto_handling avail_indepth avail_output avail_terse_output collection_pin_version collection_target color colors contact editor extended_default extra_siteconfig home icase implicit_default implicit_requirement list_output list_terse_output locked_configs mcookie_version_check ml nearly_forbidden_days pager rcfile run_quarantine search_match set_shell_startup shells_with_ksh_fpath silent_shell_debug tag_abbrev tag_color_name term_background term_width unload_match_order verbosity wa_277
+
 define translate-in-script
+$(ECHO_GEN)
 sed -e 's|@prefix@|$(prefix)|g' \
 	-e 's|@baseprefix@|$(baseprefix)|g' \
 	-e 's|@libexecdir@|$(libexecdir)|g' \
@@ -142,6 +170,20 @@ sed -e 's|@prefix@|$(prefix)|g' \
 	-e 's|@modulefilesdir@|$(modulefilesdir)|g' \
 	-e 's|@bindir@|$(bindir)|g' \
 	-e 's|@mandir@|$(mandir)|g' \
+	-e 's|@comp_cmds@|$(comp_cmds)|g' \
+	-e 's|@comp_opts@|$(comp_opts)|g' \
+	-e 's|@comp_load_opts@|$(comp_load_opts)|g' \
+	-e 's|@comp_list_opts@|$(comp_list_opts)|g' \
+	-e 's|@comp_clear_opts@|$(comp_clear_opts)|g' \
+	-e 's|@comp_avail_opts@|$(comp_avail_opts)|g' \
+	-e 's|@comp_mfile_opts@|$(comp_mfile_opts)|g' \
+	-e 's|@comp_whatis_opts@|$(comp_whatis_opts)|g' \
+	-e 's|@comp_search_opts@|$(comp_search_opts)|g' \
+	-e 's|@comp_aliases_opts@|$(comp_aliases_opts)|g' \
+	-e 's|@comp_isavail_opts@|$(comp_isavail_opts)|g' \
+	-e 's|@comp_path_opts@|$(comp_path_opts)|g' \
+	-e 's|@comp_rm_path_opts@|$(comp_rm_path_opts)|g' \
+	-e 's|@comp_config_opts@|$(comp_config_opts)|g' \
 	-e '$(setmanpathre)' \
 	-e '$(appendmanpathre)' \
 	-e '$(prependmanpathre)' \
@@ -169,7 +211,7 @@ sed -e 's|@prefix@|$(prefix)|g' \
 endef
 
 # avoid shared definitions to be rebuilt by make
-../Makefile.inc ../version.inc: ;
+../Makefile.inc: ;
 
 %: %.in
 	$(translate-in-script)
@@ -281,3 +323,13 @@ clean:
 ifeq ($(versioning),y)
 	rm -f $(EXAMPLE_MODFILES_SRCDIR)/version
 endif
+
+# quiet all commands unless verbose mode set
+ifeq ($(VERBOSE),1)
+V = 1
+endif
+# let verbose by default the install/clean/test and other specific non-build targets
+$(V).SILENT: ../version.inc sh ksh bash zsh csh tcsh fish perl.pm python.py ruby.rb \
+	lisp tcl cmake r.R bash_completion tcsh_completion zsh-functions/_module \
+	profile.sh profile.csh profile-compat.sh profile-compat.csh .modulespath \
+	modulerc $(EXAMPLE_MODFILES_SRCDIR)/modules $(EXAMPLE_MODFILES_SRCDIR)/version

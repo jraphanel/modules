@@ -7,14 +7,14 @@ Environment Modules
 Modules package provides for the dynamic modification of a user's environment
 via modulefiles.**
 
-The Modules package is a tool that simplify shell initialization and
-lets users easily modify their environment during the session with
+The Modules package is a tool that simplifies shell initialization and
+lets users easily modify their environment during a session using
 modulefiles.
 
 Each modulefile contains the information needed to configure the shell for
 an application. Once the Modules package is initialized, the environment
-can be modified on a per-module basis using the module command which
-interprets modulefiles. Typically modulefiles instruct the module command
+can be modified on a per-module basis using the `module` command which
+interprets modulefiles. Typically modulefiles instruct the `module` command
 to alter or set shell environment variables such as ``PATH``, ``MANPATH``,
 etc. modulefiles may be shared by many users on a system and users may
 have their own collection to supplement or replace the shared modulefiles.
@@ -28,6 +28,10 @@ Modules are useful in managing different versions of applications. Modules
 can also be bundled into metamodules that will load an entire suite of
 different applications.
 
+.. note:: Modules presented here are ones that modify the shell or script
+   execution environment. They should not be confused with language-specific
+   modules (e.g., Perl modules, Python modules or R modules) that add specific
+   capabilities to scripts.
 
 Quick examples
 --------------
@@ -73,6 +77,14 @@ automatically configured to the correct architecture.
    MIGRATING
    NEWS
    FAQ
+   diff_v3_v4
+
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+   :caption: Examples
+
+   cookbook
 
 .. toctree::
    :hidden:
@@ -82,13 +94,11 @@ automatically configured to the correct architecture.
    ml
    module
    modulefile
-   diff_v3_v4
-   cookbook
 
 .. toctree::
    :hidden:
    :maxdepth: 2
-   :caption: Contributing
+   :caption: Development
 
    CONTRIBUTING
    design
@@ -97,5 +107,5 @@ automatically configured to the correct architecture.
 License
 -------
 
-Modules is distributed under the GNU General Public License version 2 (GPL
-v2).
+Modules is distributed under the GNU General Public License, either version 2
+or (at your option) any later version (GPL v2+).

@@ -99,6 +99,9 @@ lappend ans [list setpath LOADEDMODULES "$module:$module_1"]
 lappend ans [list setpath _LMFILES_ "$modulefile:$modulefile_1"]
 lappend ans [list setpath MODULES_LMPREREQ $module_1&$module]
 lappend ans [list setpath MODULES_LMNOTUASKED $module]
+if {[is_conf_enabled advversspec implicitdefault]} {
+    lappend ans [list setpath MODULES_LMALTNAME $module&as|setenv/default&as|setenv/latest]
+}
 
 test_cmd_re "csh" "load $module_1" $ans
 
@@ -112,6 +115,9 @@ lappend ans [list setpath LOADEDMODULES "$module:$module_2:$module_3:$module_4"]
 lappend ans [list setpath _LMFILES_ "$modulefile:$modulefile_2:$modulefile_3:$modulefile_4"]
 lappend ans [list setpath MODULES_LMPREREQ "$module_3&trace:$module_4&setenv&trace&$module_3"]
 lappend ans [list setpath MODULES_LMNOTUASKED "$module:$module_2:$module_3"]
+if {[is_conf_enabled advversspec implicitdefault]} {
+    lappend ans [list setpath MODULES_LMALTNAME $module&as|setenv/default&as|setenv/latest:$module_2&as|trace/default&as|trace/latest]
+}
 
 test_cmd_re "csh" "load $module_4" [if_implicitdefault $ans ERR]
 
@@ -277,64 +283,4 @@ unsetenv_loaded_module
 #  Cleanup
 #
 
-unset ans
-
-unset modulefile
-unset module
-unset modulefile_1
-unset module_1
-
-unset module_2
-unset modulefile_2
-unset module_3
-unset modulefile_3
-unset module_4
-unset modulefile_4
-unset module_5
-unset modulefile_5
-unset module_6
-unset modulefile_6
-unset module_7
-unset modulefile_7
-unset module_8
-unset modulefile_8
-unset module_9
-unset modulefile_9
-unset module_10
-unset modulefile_10
-unset module_11
-unset modulefile_11
-unset module_12
-unset modulefile_12
-
-unset submod_5
-unset submodfile_5
-unset submod_6
-unset submodfile_6
-unset submod_7
-unset submodfile_7
-unset submod_11
-unset submodfile_11
-
-unset moderr_5
-unset moderr_5s
-unset moderr_6
-unset moderr_6s
-unset moderr_7
-unset moderr_7s
-unset moderr_11
-unset moderrun_5
-unset moderrun_6
-unset moderrun_7
-unset moderrun_8
-unset moderrun_9
-unset moderrun_10
-unset moderrun_11
-
-unset msgtopun_5
-unset msgtopun_6
-unset msgtopun_7
-unset msgtopun_8
-unset msgtopun_9
-unset msgtopun_10
-unset msgtopun_11
+reset_test_env

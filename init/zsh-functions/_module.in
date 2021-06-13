@@ -9,13 +9,7 @@ _module_avail() {
    local cur="${1:-}";
    # skip avail call if word currently being completed is an option keyword
    if [ -z "$cur" -o "${cur:0:1}" != '-' ]; then
-      module avail --color=never -s -t -S --no-indepth $cur 2>&1 | sed '
-         /^-\+/d; /^\s*$/d;
-         /->.*$/d;
-         /:$/d;
-         s#^\(.*\)/\(.\+\)(.*default.*)#\1\n\1\/\2#;
-         s#(.*)$##g;
-         s#\s*$##g;'
+      module avail --color=never -s -t -S --no-indepth -o '' $cur 2>&1
    fi
 }
 
@@ -89,11 +83,13 @@ _module() {
    typeset -A opt_args
 
    _arguments -C \
+      '(-T --trace)'{-T,--trace}'[Enable trace and debug messages]' \
       '(-D --debug)'{-D,--debug}'[Enable debug messages]' \
       '(-v --verbose)'{-v,--verbose}'[Enable verbose messages]' \
       '(-s --silent)'{-s,--silent}'[Turn off error, warning and informational messages]' \
       '(-h --help)'{-h,--help}'[Usage info]' \
       '(-V --version)'{-V,--version}'[Module version]' \
+      '(-w --width=)'{-w,--width=}'[Set output width]' \
       '--paginate[Pipe mesg output into a pager if stream attached to terminal]' \
       '--no-pager[Do not pipe message output into a pager]' \
       '(--color --color=)'{--color,--color=}'[Colorize the output]' \
@@ -151,6 +147,7 @@ _module() {
             'remove-path:Remove value from environment variable'
             'clear:Reset Modules-specific runtime information'
             'config:Display or set Modules configuration'
+            'sh-to-mod:Make modulefile from script env changes'
          )
          # show commands only with compatible options
          if (( !$+opt_args[-h] && !$+opt_args[--help] \
@@ -175,6 +172,8 @@ _module() {
                   '(-l --long)'{-l,--long}'[Display output in long format]' \
                   '(-t --terse)'{-t,--terse}'[Display output in terse format]' \
                   '(-j --json)'{-j,--json}'[Display output in JSON format]' \
+                  '(-o --output=)'{-o,--output=}'[Define elements to output in addition to module names]' \
+                  '(-a --all)'{-a,--all}'[Include hidden modules in search]' \
                   '(-d --default)'{-d,--default}'[Only show default versions available]' \
                   '(-L --latest)'{-L,--latest}'[Only show latest versions available]' \
                   '(-i --icase)'{-i,--icase}'[Case insensitive match]' \
@@ -184,7 +183,19 @@ _module() {
                   '--no-indepth[Perform non-recursive avail search]' \
                   "*::modulefile:{_module_avail_mods $cur}" && ret=0
                ;;
-            (list|savelist)
+            (aliases)
+               _arguments \
+                  '(-a --all)'{-a,--all}'[Include hidden modules in search]' && ret=0
+               ;;
+            (list)
+               _arguments \
+                  '(-l --long)'{-l,--long}'[Display output in long format]' \
+                  '(-t --terse)'{-t,--terse}'[Display output in terse format]' \
+                  '(-j --json)'{-j,--json}'[Display output in JSON format]' \
+                  '(-o --output=)'{-o,--output=}'[Define elements to output in addition to module names]' \
+                  '(-a --all)'{-a,--all}'[Include hidden modules in list]' && ret=0
+               ;;
+            (savelist)
                local -a opts; opts=(
                   '-l:Display output in long format'
                   '--long:Display output in long format'
@@ -192,6 +203,8 @@ _module() {
                   '--terse:Display output in terse format'
                   '-j:Display output in JSON format'
                   '--json:Display output in JSON format'
+                  '-o:Define elements to output in addition to module names'
+                  '--output=:Define elements to output in addition to module names'
                )
                _describe -t opts 'Switches' opts && ret=0
                ;;
@@ -230,20 +243,28 @@ _module() {
                   '(-p --prepend)'{-p,--prepend}'[Prepend directory to MODULEPATH]' \
                   '*:modulepath:_files -/' && ret=0
                ;;
-            (display|help|show|test|path|paths|is-loaded|is-avail|info-loaded)
+            (display|help|show|test|path|paths|is-loaded|info-loaded)
                _arguments \
                   '(-i --icase)'{-i,--icase}'[Case insensitive match]' \
+                  "*::modulefile:{_module_avail_mods $cur}" && ret=0
+               ;;
+            (is-avail)
+               _arguments \
+                  '(-i --icase)'{-i,--icase}'[Case insensitive match]' \
+                  '(-a --all)'{-a,--all}'[Include hidden modules in search]' \
                   "*::modulefile:{_module_avail_mods $cur}" && ret=0
                ;;
             (whatis)
                _arguments \
                   '(-i --icase)'{-i,--icase}'[Case insensitive match]' \
                   '(-j --json)'{-j,--json}'[Display output in JSON format]' \
+                  '(-a --all)'{-a,--all}'[Include hidden modules in search]' \
                   "*::modulefile:{_module_avail_mods $cur}" && ret=0
                ;;
             (apropos|keyword|search)
                _arguments \
                   '(-j --json)'{-j,--json}'[Display output in JSON format]' \
+                  '(-a --all)'{-a,--all}'[Include hidden modules in search]' \
                   && ret=0
                ;;
             (append-path|prepend-path)
@@ -262,7 +283,7 @@ _module() {
                _arguments \
                   '--dump-state[Report each state value of current Modules execution]' \
                   '--reset[Unset environment variable relative to configuration key]' \
-                  '1:configuration key:(advanced_version_spec auto_handling avail_indepth collection_pin_version collection_target color colors contact extended_default extra_siteconfig home icase implicit_default locked_configs ml pager rcfile run_quarantine search_match set_shell_startup silent_shell_debug term_background unload_match_order verbosity wa_277)' \
+                  '1:configuration key:(advanced_version_spec auto_handling avail_indepth avail_output avail_terse_output collection_pin_version collection_target color colors contact editor extended_default extra_siteconfig home icase implicit_default implicit_requirement list_output list_terse_output locked_configs mcookie_version_check ml nearly_forbidden_days pager rcfile run_quarantine search_match set_shell_startup shells_with_ksh_fpath silent_shell_debug tag_abbrev tag_color_name term_background term_width unload_match_order verbosity wa_277)' \
                   && ret=0
                ;;
          esac
